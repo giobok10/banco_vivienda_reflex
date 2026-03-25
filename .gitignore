@@ -26,3 +26,7 @@ Thumbs.db
 .web/
 __pycache__/
 *.pyc
+
+# Agregar al final de tu .gitignore
+.reflex/
+.web/

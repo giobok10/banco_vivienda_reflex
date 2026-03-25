@@ -1,5 +1,6 @@
 import reflex as rx
-from .models import Usuario
+from .models import Usuario, Cliente, Cuenta, Prestamo
+from sqlalchemy import text  # <-- IMPORTACIÓN CORRECTA
 
 class State(rx.State):
     user_input: str = ""
@@ -18,6 +19,17 @@ class State(rx.State):
     user_role_input: str = "2"  # Por defecto cliente
 
     # =========================
+    # DATOS DEL CLIENTE (NUEVO)
+    # =========================
+    mis_cuentas: list[Cuenta] = []
+    mis_prestamos: list[Prestamo] = []
+
+    # =========================
+    # NUEVO: PAGO
+    # =========================
+    monto_pago: str = ""
+
+    # =========================
     # LOGIN
     # =========================
     def login_handler(self):
@@ -30,7 +42,6 @@ class State(rx.State):
             ).first()
 
             if user:
-                # Seteamos todo como strings para LocalStorage
                 self.logged_user = str(user.username)
                 self.user_role = str(user.id_rol)
                 self.is_authenticated = "true"
@@ -41,12 +52,10 @@ class State(rx.State):
                 self.error_msg = "USUARIO O CLAVE INCORRECTOS"
 
     def check_login(self):
-        """Si no es exactamente la cadena 'true', para afuera."""
         if self.is_authenticated != "true":
             return rx.redirect("/")
 
     def logout(self):
-        """Limpieza profunda de la sesión"""
         self.is_authenticated = "false"
         self.logged_user = ""
         self.user_role = "0"
@@ -74,7 +83,77 @@ class State(rx.State):
             session.add(nuevo)
             session.commit()
 
-        # Refrescar tabla después de crear
         self.obtener_todos_usuarios()
-
         return rx.window_alert(f"Usuario {self.user_input} creado!")
+
+    # =========================
+    # CARGA DE DATOS CLIENTE
+    # =========================
+    def cargar_datos_cliente(self):
+        with rx.session() as session:
+            user_obj = session.exec(
+                Usuario.select().where(
+                    Usuario.username == self.logged_user
+                )
+            ).first()
+
+            if user_obj:
+                cliente_obj = session.exec(
+                    Cliente.select().where(
+                        Cliente.id_usuario == user_obj.id_usuario
+                    )
+                ).first()
+
+                if cliente_obj:
+                    self.mis_cuentas = session.exec(
+                        Cuenta.select().where(
+                            Cuenta.id_cliente == cliente_obj.id_cliente
+                        )
+                    ).all()
+
+                    self.mis_prestamos = session.exec(
+                        Prestamo.select().where(
+                            Prestamo.id_cliente == cliente_obj.id_cliente
+                        )
+                    ).all()
+
+    # =========================
+    # PAGO Y AUDITORÍA
+    # =========================
+    def realizar_pago(self, id_prestamo: int):
+        if not self.monto_pago or float(self.monto_pago) <= 0:
+            return rx.window_alert("Ingrese un monto válido")
+
+        with rx.session() as session:
+            try:
+                monto = float(self.monto_pago)
+                
+                # 1. Registrar el pago (usando sqlalchemy.text)
+                session.execute(
+                    text(f"INSERT INTO pagos (id_prestamo, monto) VALUES ({id_prestamo}, {monto})")
+                )
+
+                # 2. Registrar en bitácora
+                user_obj = session.exec(
+                    Usuario.select().where(
+                        Usuario.username == self.logged_user
+                    )
+                ).first()
+
+                if user_obj:
+                    session.execute(
+                        text(
+                            f"INSERT INTO bitacora (id_usuario, accion) VALUES ({user_obj.id_usuario}, 'Pago de préstamo ID {id_prestamo} por Q{monto}')"
+                        )
+                    )
+                
+                session.commit()
+                self.monto_pago = ""
+
+                # REFRESCAR DATOS
+                self.cargar_datos_cliente()
+
+                return rx.window_alert("¡Pago exitoso! El saldo se ha actualizado.")
+
+            except Exception as e:
+                return rx.window_alert(f"Error en transacción: {str(e)}")
