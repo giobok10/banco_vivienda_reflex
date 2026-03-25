@@ -1,0 +1,28 @@
+*.db
+*.py[cod]
+assets/external/
+.web
+.states
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Neon / Environment variables
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Reflex specific
+.web/
+__pycache__/
+*.pyc
