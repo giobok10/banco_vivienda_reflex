@@ -27,6 +27,8 @@ Thumbs.db
 __pycache__/
 *.pyc
 
-# Agregar al final de tu .gitignore
+# otros
 .reflex/
 .web/
+.vscode/
+CURSOR.md
