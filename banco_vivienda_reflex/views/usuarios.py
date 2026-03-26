@@ -41,9 +41,9 @@ def usuarios_page() -> rx.Component:
                 ),
                 rx.table.body(
                     rx.foreach(State.lista_usuarios, lambda u: rx.table.row(
-                        rx.table.cell(u.id_usuario.to(str)),
+                        rx.table.cell(u.id_usuario),
                         rx.table.cell(u.username),
-                        rx.table.cell(u.id_rol.to(str)),
+                        rx.table.cell(u.id_rol),
                     ))
                 ),
                 width="100%",

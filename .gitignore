@@ -26,3 +26,9 @@ Thumbs.db
 .web/
 __pycache__/
 *.pyc
+
+# otros
+.reflex/
+.web/
+.vscode/
+CURSOR.md
