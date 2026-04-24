@@ -32,3 +32,6 @@ __pycache__/
 .web/
 .vscode/
 CURSOR.md
+CLAUDE.md
+INFORME_MIGRACION_MONGODB.md
+MIGRATION_DOC.md

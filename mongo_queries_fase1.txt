@@ -1,0 +1,69 @@
+-- Consultas equivalentes de Fase 1 en MongoDB (usar en mongosh o Atlas Data Explorer)
+
+-- 1) Listar usuarios
+db.usuarios.find({})
+
+-- 2) Buscar usuario por username (login)
+db.usuarios.find({ username: "admin_banco" })
+
+-- 3) Obtener roles
+db.roles.find({})
+
+-- 4) Buscar cliente por DPI
+db.clientes.find({ dpi: "1234567890123" })
+
+-- 5) Obtener cliente por id_usuario
+db.clientes.find({ id_usuario: 1 })
+
+-- 6) Obtener cuentas de un cliente
+db.cuentas.find({ id_cliente: 1 })
+
+-- 7) Obtener préstamos de un cliente
+db.prestamos.find({ id_cliente: 1 })
+
+-- 8) Obtener pagos de un préstamo
+db.pagos.find({ id_prestamo: 1 }).sort({ fecha_pago: 1 })
+
+-- 9) Snapshot completo de cliente (cliente + cuentas + préstamos + pagos)
+db.clientes.aggregate([
+  { $match: { id_cliente: 1 } },
+  {
+    $lookup: {
+      from: "cuentas",
+      localField: "id_cliente",
+      foreignField: "id_cliente",
+      as: "cuentas"
+    }
+  },
+  {
+    $lookup: {
+      from: "prestamos",
+      localField: "id_cliente",
+      foreignField: "id_cliente",
+      as: "prestamos"
+    }
+  },
+  {
+    $lookup: {
+      from: "pagos",
+      localField: "prestamos.id_prestamo",
+      foreignField: "id_prestamo",
+      as: "pagos"
+    }
+  }
+])
+
+-- 10) Total de saldo en cuentas (equivalente SUM)
+db.cuentas.aggregate([
+  { $group: { _id: null, total_saldo: { $sum: "$saldo" } } }
+])
+
+-- 11) Registrar bitácora
+db.bitacora.insertOne({
+  id_usuario: 1,
+  accion: "Inicio de sesion",
+  fecha: new Date()
+})
+
+-- 12) Ver bitácora reciente
+db.bitacora.find({}).sort({ fecha: -1 }).limit(20)
